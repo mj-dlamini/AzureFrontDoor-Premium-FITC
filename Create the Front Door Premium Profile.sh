@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RESOURCE_GROUP="rg-network-prod"
+RESOURCE_GROUP="rg-fict-infra"
 LOCATION="Global"
 
 PROFILE_NAME="afd-prod"

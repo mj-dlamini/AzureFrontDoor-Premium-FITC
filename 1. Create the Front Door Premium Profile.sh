@@ -3,7 +3,7 @@
 RESOURCE_GROUP="rg-fict-infra"
 LOCATION="Global"
 
-PROFILE_NAME="afd-prod"
+PROFILE_NAME="afd-fict-infra"
 
 az afd profile create \
     --resource-group $RESOURCE_GROUP \

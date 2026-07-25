@@ -1,0 +1,10 @@
+az afd route create \
+    --resource-group $RESOURCE_GROUP \
+    --profile-name $PROFILE_NAME \
+    --endpoint-name web-prod \
+    --route-name default-route \
+    --origin-group webapps \
+    --https-redirect Enabled \
+    --supported-protocols Http Https \
+    --forwarding-protocol MatchRequest \
+    --link-to-default-domain Enabled

@@ -5,3 +5,27 @@ There are two different WAF services in Azure:
 az network front-door waf-policy → Classic Azure Front Door (retiring)
 
 az afd security-policy + az network front-door waf-policy (Premium/Standard)
+
+
+Verify Your Environment
+
+echo "Subscription:"
+az account show --query name -o tsv
+
+echo
+echo "Profiles:"
+az afd profile list --output table
+
+echo
+echo "Endpoints:"
+az afd endpoint list \
+  --resource-group "$RESOURCE_GROUP" \
+  --profile-name "$PROFILE_NAME" \
+  --output table
+
+echo
+echo "Origin Groups:"
+az afd origin-group list \
+  --resource-group "$RESOURCE_GROUP" \
+  --profile-name "$PROFILE_NAME" \
+  --output table

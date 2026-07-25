@@ -1,0 +1,17 @@
+Run these commands
+
+az afd profile show \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME"
+
+
+az afd endpoint list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --output table
+
+
+az afd origin-group list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --output table

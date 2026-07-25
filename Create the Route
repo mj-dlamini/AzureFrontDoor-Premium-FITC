@@ -1,7 +1,7 @@
 az afd route create \
     --resource-group $RESOURCE_GROUP \
     --profile-name $PROFILE_NAME \
-    --endpoint-name web-prod \
+    --endpoint-name web-fict-infra-fda0b6czd0d9eudw.z02.azurefd.net \
     --route-name default-route \
     --origin-group webapps \
     --https-redirect Enabled \

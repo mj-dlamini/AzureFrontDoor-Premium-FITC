@@ -2,8 +2,8 @@ az afd origin create \
     --resource-group $RESOURCE_GROUP \
     --profile-name $PROFILE_NAME \
     --origin-group-name webapps \
-    --origin-name app01 \
-    --host-name myapp.azurewebsites.net \
+    --origin-name lab \
+    --host-name lab.azurewebsites.net \
     --origin-host-header myapp.azurewebsites.net \
     --priority 1 \
     --weight 1000 \

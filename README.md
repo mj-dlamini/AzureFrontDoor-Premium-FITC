@@ -1,1 +1,1 @@
-# AzureFrontDoor-Premium-FITC
+# AzureFrontDoor-Premium-FITC - Using Azure CLI/Bash

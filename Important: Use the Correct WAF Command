@@ -1,0 +1,7 @@
+Important: Use the Correct WAF Command
+
+There are two different WAF services in Azure:
+
+az network front-door waf-policy → Classic Azure Front Door (retiring)
+
+az afd security-policy + az network front-door waf-policy (Premium/Standard)

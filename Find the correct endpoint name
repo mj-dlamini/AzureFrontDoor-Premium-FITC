@@ -1,0 +1,23 @@
+az afd endpoint list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --output table
+
+         OR
+
+az afd endpoint list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --query "[].{EndpointName:name,HostName:hostName}" \
+    --output table
+
+
+You should see something like:
+
+EndpointName	                      HostName
+web-fict-infra	                    web-fict-infra-fda0b6czd0d9eudw.z02.azurefd.net
+
+Notice:
+
+EndpointName = web-fict-infra ✅
+HostName = web-fict-infra-fda0b6czd0d9eudw.z02.azurefd.net

@@ -1,0 +1,6 @@
+az monitor log-analytics workspace create
+--resource-group "$RESOURCE_GROUP"
+--workspace-name "$WORKSPACE_NAME"
+--location "$LOCATION"
+--sku PerGB2018
+--retention-time 90

@@ -1,0 +1,78 @@
+Variables
+RESOURCE_GROUP="rg-fict-infra"
+LOCATION="southafricanorth"
+WORKSPACE_NAME="law-fict-infra"
+
+echo "========================================"
+echo " Azure Log Analytics Workspace"
+echo "========================================"
+
+Check Azure login
+echo "Checking Azure login..."
+az account show >/dev/null
+
+Check Resource Group
+if ! az group exists --name "$RESOURCE_GROUP" | grep -q true; then
+echo "Creating Resource Group..."
+
+az group create \
+    --name "$RESOURCE_GROUP" \
+    --location "$LOCATION"
+
+echo "✔ Resource Group created."
+else
+echo "✔ Resource Group already exists."
+fi
+
+echo
+
+echo "Checking Log Analytics Workspace..."
+
+if az monitor log-analytics workspace show
+--resource-group "$RESOURCE_GROUP"
+--workspace-name "$WORKSPACE_NAME"
+>/dev/null 2>&1
+then
+echo "✔ Log Analytics Workspace already exists."
+
+else
+
+echo "Creating Log Analytics Workspace..."
+
+az monitor log-analytics workspace create \
+    --resource-group "$RESOURCE_GROUP" \
+    --workspace-name "$WORKSPACE_NAME" \
+    --location "$LOCATION" \
+    --sku PerGB2018 \
+    --retention-time 30
+
+echo "✔ Log Analytics Workspace created."
+fi
+
+echo
+
+echo "Workspace Details"
+
+az monitor log-analytics workspace show
+--resource-group "$RESOURCE_GROUP"
+--workspace-name "$WORKSPACE_NAME"
+--output table
+
+echo
+
+echo "Deployment completed successfully."
+
+Create a Workspace with 90-Day Retention
+az monitor log-analytics workspace create
+--resource-group "$RESOURCE_GROUP"
+--workspace-name "$WORKSPACE_NAME"
+--location "$LOCATION"
+--sku PerGB2018
+--retention-time 90
+
+Verify Deployment
+az monitor log-analytics workspace show
+--resource-group "$RESOURCE_GROUP"
+--workspace-name "$WORKSPACE_NAME"
+--query "{Name:name,Location:location,SKU:sku.name,Retention:retentionInDays}"
+--output table

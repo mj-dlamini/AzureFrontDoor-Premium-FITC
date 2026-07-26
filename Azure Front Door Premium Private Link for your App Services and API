@@ -1,0 +1,135 @@
+Prerequisites
+
+Azure Front Door Premium SKU (Private Link is not supported on Standard).
+A Private Endpoint–capable origin (for example, Azure App Service or API Management).
+The Azure CLI cdn extension installed and up to date:
+az extension add --name cdn --upgrade
+Script 1 – Define Variables
+
+Update these values for your environment.
+
+#!/bin/bash
+
+# ==========================================================
+# Azure Front Door Premium - Enable Private Link to App Service
+# ==========================================================
+
+RESOURCE_GROUP="rg-fict-infra"
+PROFILE_NAME="afd-fict-infra"
+
+ORIGIN_GROUP="webapps"
+ORIGIN_NAME="studentportal"
+
+APP_SERVICE_HOST="app-fict-prod.azurewebsites.net"
+
+# Region of the App Service / Private Link endpoint
+PRIVATE_LINK_LOCATION="South Africa North"
+
+REQUEST_MESSAGE="Azure Front Door Premium Private Link"
+
+echo "Variables loaded..."
+Script 2 – Verify the Front Door Profile
+az afd profile show \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --query "{Name:name,SKU:sku.name}" \
+    --output table
+
+Expected output:
+
+Name               SKU
+-----------------  -------------------------
+afd-fict-infra     Premium_AzureFrontDoor
+Script 3 – Create or Update the Origin with Private Link Enabled
+az afd origin create \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --origin-group-name "$ORIGIN_GROUP" \
+    --origin-name "$ORIGIN_NAME" \
+    --host-name "$APP_SERVICE_HOST" \
+    --origin-host-header "$APP_SERVICE_HOST" \
+    --priority 1 \
+    --weight 1000 \
+    --https-port 443 \
+    --enable-private-link true \
+    --private-link-location "$PRIVATE_LINK_LOCATION" \
+    --private-link-request-message "$REQUEST_MESSAGE" \
+    --private-link-resource "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Web/sites/app-fict-prod"
+Script 4 – Verify the Origin Configuration
+az afd origin show \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --origin-group-name "$ORIGIN_GROUP" \
+    --origin-name "$ORIGIN_NAME" \
+    --output json
+
+Check that:
+
+sharedPrivateLinkResource
+
+contains values similar to:
+
+status : Pending
+
+or
+
+status : Approved
+Script 5 – Approve the Private Link Connection
+
+For App Service, the private endpoint connection must be approved on the origin resource.
+
+List pending connections:
+
+APP_NAME="app-fict-prod"
+
+az network private-endpoint-connection list \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$APP_NAME" \
+    --type Microsoft.Web/sites \
+    --output table
+
+Approve the connection (replace <connection-name> with the value from the list):
+
+az network private-endpoint-connection approve \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "<connection-name>" \
+    --type Microsoft.Web/sites \
+    --description "Approved for Azure Front Door Premium"
+Script 6 – Disable Public Access (Recommended)
+
+After validating that Azure Front Door works correctly over Private Link, restrict direct public access to the backend using App Service access restrictions or other appropriate controls so traffic flows through Front Door.
+
+Script 7 – Validate End-to-End
+# Front Door Endpoint
+az afd endpoint list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --output table
+
+# Origin
+az afd origin list \
+    --resource-group "$RESOURCE_GROUP" \
+    --profile-name "$PROFILE_NAME" \
+    --origin-group-name "$ORIGIN_GROUP" \
+    --output table
+Production Best Practices
+
+For a production deployment, I recommend configuring:
+
+✅ Azure Front Door Premium
+✅ Private Link enabled for origins
+✅ WAF Policy (OWASP CRS in Prevention mode)
+✅ Security Policy attached to endpoints/domains
+✅ Health probes
+✅ Load balancing
+✅ HTTPS-only routing
+✅ Azure-managed TLS certificates (or customer-managed certificates)
+✅ Diagnostic settings to Log Analytics
+✅ Azure Monitor alerts
+✅ Web Application Firewall logging
+✅ Origin failover (multiple origins where appropriate)
+✅ Resource tagging
+✅ Azure Policy for governance
+✅ DDoS protection strategy (at the VNet level where applicable)
+
+This architecture ensures your App Service or API Management backend is reachable privately by Azure Front Door Premium while reducing direct exposure of the application to the public internet.

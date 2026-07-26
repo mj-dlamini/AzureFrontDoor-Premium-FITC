@@ -1,0 +1,157 @@
+#!/bin/bash
+
+set -euo pipefail
+
+###############################################
+# Azure Front Door Premium Monitoring
+###############################################
+
+RESOURCE_GROUP="rg-fict-infra"
+PROFILE_NAME="afd-fict-infra"
+
+ACTION_GROUP_NAME="ag-frontdoor"
+
+ACTION_GROUP_SHORT="AFD"
+
+EMAIL="alerts@fourthict.co.za"
+
+LOG_ANALYTICS="law-fict-infra"
+
+##########################################################
+# Get Resource IDs
+##########################################################
+
+FRONTDOOR_ID=$(az afd profile show \
+    --resource-group $RESOURCE_GROUP \
+    --profile-name $PROFILE_NAME \
+    --query id -o tsv)
+
+WORKSPACE_ID=$(az monitor log-analytics workspace show \
+    --resource-group $RESOURCE_GROUP \
+    --workspace-name $LOG_ANALYTICS \
+    --query id -o tsv)
+
+##########################################################
+# Create Action Group
+##########################################################
+
+if ! az monitor action-group show \
+    --resource-group $RESOURCE_GROUP \
+    --name $ACTION_GROUP_NAME >/dev/null 2>&1
+then
+
+    az monitor action-group create \
+        --resource-group $RESOURCE_GROUP \
+        --name $ACTION_GROUP_NAME \
+        --short-name $ACTION_GROUP_SHORT \
+        --action email Admin $EMAIL
+
+fi
+
+ACTION_GROUP_ID=$(az monitor action-group show \
+    --resource-group $RESOURCE_GROUP \
+    --name $ACTION_GROUP_NAME \
+    --query id -o tsv)
+
+##########################################################
+# Backend Unhealthy
+##########################################################
+
+az monitor metrics alert create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD Backend Unhealthy" \
+    --scopes $FRONTDOOR_ID \
+    --condition "avg OriginHealthPercentage < 100" \
+    --description "Backend unhealthy" \
+    --action $ACTION_GROUP_ID
+
+##########################################################
+# Endpoint Unavailable
+##########################################################
+
+az monitor metrics alert create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD Endpoint Down" \
+    --scopes $FRONTDOOR_ID \
+    --condition "avg PercentageAvailability < 99" \
+    --description "Endpoint unavailable" \
+    --action $ACTION_GROUP_ID
+
+##########################################################
+# High Latency
+##########################################################
+
+az monitor metrics alert create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD High Latency" \
+    --scopes $FRONTDOOR_ID \
+    --condition "avg TotalLatency > 500" \
+    --description "Latency greater than 500ms" \
+    --action $ACTION_GROUP_ID
+
+##########################################################
+# Origin Unavailable
+##########################################################
+
+az monitor metrics alert create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD Origin Down" \
+    --scopes $FRONTDOOR_ID \
+    --condition "avg OriginHealthPercentage < 50" \
+    --description "Origin unavailable" \
+    --action $ACTION_GROUP_ID
+
+##########################################################
+# HTTP 5xx Errors
+##########################################################
+
+az monitor metrics alert create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD 5xx Errors" \
+    --scopes $FRONTDOOR_ID \
+    --condition "total RequestCountByStatusCode > 50 where HttpStatusCode == 5xx" \
+    --description "High HTTP 5xx error rate" \
+    --action $ACTION_GROUP_ID
+
+##########################################################
+# WAF Blocked Requests (Log Alert)
+##########################################################
+
+QUERY='AzureDiagnostics
+| where Category=="FrontDoorWebApplicationFirewallLog"
+| where action_s=="Block"
+| summarize Count=count() by bin(TimeGenerated,5m)
+| where Count > 10'
+
+az monitor scheduled-query create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD WAF Blocks" \
+    --scopes $WORKSPACE_ID \
+    --condition "count > 0" \
+    --description "WAF blocked requests detected" \
+    --evaluation-frequency 5m \
+    --window-size 5m \
+    --action $ACTION_GROUP_ID \
+    --query "$QUERY"
+
+##########################################################
+# TLS Certificate Expiry
+##########################################################
+
+QUERY='AzureDiagnostics
+| where Category has "FrontDoor"
+| where Message has "certificate"
+| where Message has "expire"'
+
+az monitor scheduled-query create \
+    --resource-group $RESOURCE_GROUP \
+    --name "AFD TLS Certificate Expiry" \
+    --scopes $WORKSPACE_ID \
+    --condition "count > 0" \
+    --evaluation-frequency 1d \
+    --window-size 1d \
+    --action $ACTION_GROUP_ID \
+    --query "$QUERY"
+
+echo
+echo "Azure Front Door Monitoring Successfully Configured."

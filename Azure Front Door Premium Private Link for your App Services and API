@@ -20,7 +20,7 @@ PROFILE_NAME="afd-fict-infra"
 ORIGIN_GROUP="webapps"
 ORIGIN_NAME="studentportal"
 
-APP_SERVICE_HOST="app-fict-prod.azurewebsites.net"
+APP_SERVICE_HOST="studentportal-fict-infra.azurewebsites.net"
 
 # Region of the App Service / Private Link endpoint
 PRIVATE_LINK_LOCATION="South Africa North"
